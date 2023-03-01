@@ -11,7 +11,7 @@ from django.db.models import Q
 
 class Index(View):
     def get(self, request, *args, **kwargs):
-        return render(request, 'index.html')
+        return render(request, 'Home.html')
 
 
 class About(View):
@@ -191,3 +191,7 @@ def signout(request):
     logout(request)
     messages.success(request, 'Logged out Successfully!')
     return redirect('signin')
+def home(request):
+    template="Home.html"
+    context={}
+    return render(request,template,context)
