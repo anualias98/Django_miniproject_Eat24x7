@@ -6,6 +6,7 @@ from django.shortcuts import render, redirect
 from django.views import View
 from django.core.mail import send_mail
 from .models import MenuItem, Category, OrderModel
+from django.db.models import Q
 
 
 class Index(View):
@@ -127,6 +128,32 @@ class Order(View):
 # class OrderPayConfirmation(View):
 #     def get(self, request, *args, **kwargs):
 #         return render(request, 'order_pay_confirmation.html')
+class Menu(View):
+    def get(self, request, *args, **kwargs):
+        menu_items = MenuItem.objects.all()
+
+        context = {
+            'menu_items': menu_items
+        }
+
+        return render(request, 'menu.html', context)
+
+
+class MenuSearch(View):
+    def get(self, request, *args, **kwargs):
+        query = self.request.GET.get("q")
+
+        menu_items = MenuItem.objects.filter(
+            Q(name__icontains=query) |
+            Q(price__icontains=query) |
+            Q(description__icontains=query)
+        )
+
+        context = {
+            'menu_items': menu_items
+        }
+
+        return render(request, 'menu.html', context)
 def signup(request):
     if request.method == 'POST':
         username = request.POST['username']
