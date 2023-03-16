@@ -1,12 +1,27 @@
 import json
-from django.contrib.auth import authenticate,login,logout
+from django.contrib.auth import authenticate, login, logout
+from django.contrib.auth.forms import UserCreationForm, AuthenticationForm
 from django.contrib.auth.models import User
 from django.contrib import messages
+from django.http import HttpResponse
 from django.shortcuts import render, redirect
 from django.views import View
 from django.core.mail import send_mail
 from .models import MenuItem, Category, OrderModel
 from django.db.models import Q
+from Eat24x7 import settings
+
+
+def mail(request):
+    subject = "Order Confirmation"
+    msg = "Thank You For Your Order!"
+    to = "anukalias98@gmail.com"
+    res = send_mail(subject, msg, settings.EMAIL_HOST_USER, [to])
+    if res == 1:
+        msg = "mail sent successfully"
+    else:
+        msg = "Mail could not sent"
+    return HttpResponse(msg)
 
 
 class Index(View):
@@ -17,6 +32,11 @@ class Index(View):
 class About(View):
     def get(self, request, *args, **kwargs):
         return render(request, 'about.html')
+
+
+class Pricing(View):
+    def get(selfself, request, *args, **kwargs):
+        return render(request, 'pricing.html')
 
 
 class Order(View):
@@ -36,7 +56,7 @@ class Order(View):
             'drinks': drinks,
         }
 
-        # render the template
+
         return render(request, 'order.html', context)
 
     def post(self, request, *args, **kwargs):
@@ -82,52 +102,55 @@ class Order(View):
         order.items.add(*item_ids)
 
         # After everything is done, send confirmation email to the user
-        body = ('Thank you for your order! Your food is being made and will be delivered soon!\n'
-                f'Your total: {price}\n'
-                'Thank you again for your order!')
-
-        send_mail(
-            'Thank You For Your Order!',
-            body,
-            'example@example.com',
-            [email],
-            fail_silently=False
-        )
+        # body = ('Thank you for your order! Your food is being made and will be delivered soon!\n'
+        #         f'Your total: {price}\n'
+        #         'Thank you again for your order!')
+        #
+        # send_mail(
+        #     'Thank You For Your Order!',
+        #     body,
+        #     'anukalias98@gmail.com.com',
+        #     [email],
+        #     fail_silently=False
+        # )
+        #
 
         context = {
             'items': order_items['items'],
             'price': price
         }
 
-#         return redirect('order-confirmation', pk=order.pk)
-#
-#
-# class OrderConfirmation(View):
-#     def get(self, request, pk, *args, **kwargs):
-#         order = OrderModel.objects.get(pk=pk)
-#
-#         context = {
-#             'pk': order.pk,
-#             'items': order.items,
-#             'price': order.price,
-#         }
+        return redirect('order-confirmation', pk=order.pk)
+
+
+class OrderConfirmation(View):
+    def get(self, request, pk, *args, **kwargs):
+        order = OrderModel.objects.get(pk=pk)
+
+        context = {
+            'pk': order.pk,
+            'items': order.items,
+            'price': order.price,
+        }
 
         return render(request, 'order_confirmation.html', context)
 
-    # def post(self, request, pk, *args, **kwargs):
-    #     data = json.loads(request.body)
-    #
-    #     if data['isPaid']:
-    #         order = OrderModel.objects.get(pk=pk)
-    #         order.is_paid = True
-    #         order.save()
-    #
-    #     return redirect('payment-confirmation')
+    def post(self, request, pk, *args, **kwargs):
+        data = json.loads(request.body)
+
+        if data['isPaid']:
+            order = OrderModel.objects.get(pk=pk)
+            order.is_paid = True
+            order.save()
+
+        return redirect('payment-confirmation')
 
 
-# class OrderPayConfirmation(View):
-#     def get(self, request, *args, **kwargs):
-#         return render(request, 'order_pay_confirmation.html')
+class OrderPayConfirmation(View):
+    def get(self, request, *args, **kwargs):
+        return render(request, 'order_pay_confirmation.html')
+
+
 class Menu(View):
     def get(self, request, *args, **kwargs):
         menu_items = MenuItem.objects.all()
@@ -154,44 +177,66 @@ class MenuSearch(View):
         }
 
         return render(request, 'menu.html', context)
+
+#
+# def signup(request):
+#     if request.method == 'POST':
+#         username = request.POST['username']
+#         email = request.POST['email']
+#         pass1 = request.POST['pass1']
+#         pass2 = request.POST['pass2']
+#
+#         myuser = User.objects.create_user(username, email, pass1)
+#
+#         myuser.save()
+#
+#         return redirect('signin')
+#
+#     return render(request, 'signup.html')
+#
+#
+# def signin(request):
+#     if request.method == 'POST':
+#         username = request.POST['username']
+#         pass1 = request.POST['pass1']
+#
+#         user = authenticate(username=username, password=pass1)
+#
+#         if user is not None:
+#             login(request, user)
+#             fname = user.username
+#             return render(request, 'base.html', {'fname': fname})
+#
+#         else:
+#             return redirect('signin')
+#
+#     return render(request, 'signin.html')
 def signup(request):
     if request.method == 'POST':
-        username = request.POST['username']
-        email = request.POST['email']
-        pass1 = request.POST['pass1']
-        pass2 = request.POST['pass2']
-
-        myuser = User.objects.create_user(username, email, pass1)
-
-        myuser.save()
-
-        return redirect('signin')
-
-    return render(request, 'signup.html')
-
-
+        form = UserCreationForm(request.POST)
+        if form.is_valid():
+            form.save()
+            return redirect('signin')
+    else:
+        form = UserCreationForm()
+    return render(request,'signup.html',{'form':form})
 def signin(request):
     if request.method == 'POST':
-        username = request.POST['username']
-        pass1 = request.POST['pass1']
+        form = AuthenticationForm(data=request.POST)
+        if form.is_valid():
+            return redirect('order')
+    else:
+        form = AuthenticationForm()
 
-        user = authenticate(username=username, password=pass1)
-
-        if user is not None:
-            login(request, user)
-            fname = user.username
-            return render(request, 'base.html', {'fname': fname})
-
-        else:
-            return redirect('signin')
-
-    return render(request, 'signin.html')
+    return render(request, 'signin.html', {'form': form})
 
 def signout(request):
     logout(request)
     messages.success(request, 'Logged out Successfully!')
     return redirect('signin')
+
+
 def home(request):
-    template="Home.html"
-    context={}
-    return render(request,template,context)
+    template = "Home.html"
+    context = {}
+    return render(request, template, context)

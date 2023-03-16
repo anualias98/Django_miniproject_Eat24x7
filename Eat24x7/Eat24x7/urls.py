@@ -15,19 +15,24 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import path, include
-from customer.views import Index ,About,Order,signin,signup,home,Menu,MenuSearch
+from customer.views import Index ,About,Order,signin,Pricing,signup,home,Menu,MenuSearch,OrderConfirmation,OrderPayConfirmation
 from django.conf.urls.static import static
 from django.conf import settings
 
+from customer import views
 
 urlpatterns = [
+    path('mail/', views.mail),
     path('admin/', admin.site.urls),
     path('restaurant/',include('restaurant.urls')),
+    path('pricing/',Pricing.as_view(),name='pricing'),
     path('menu/', Menu.as_view(), name='menu'),
     path('menu/search/', MenuSearch.as_view(), name='menu-search'),
     path('',Index.as_view(),name='index'),
     path('about/',About.as_view(),name='about'),
     path('order/',Order.as_view(),name='order'),
+    path('order-confirmation/<int:pk>',OrderConfirmation.as_view(),name='order-confirmation'),
+    path('payment-confirmation/', OrderPayConfirmation.as_view(),name='payment-confirmation'),
     path('signin/',signin,name='signin'),
     path('signup/',signup,name='signup'),
     path('home/',home,name='home')
